@@ -142,15 +142,6 @@
     <p class="hint">寫得越具體，講師走過來就能直接接手，不用重問一次。</p>
   </div>
 
-  <h2>需要協助嗎</h2>
-  <label class="check">
-    <input type="checkbox" id="needField">
-    <span>我需要場域協助（希望計畫團隊幫忙媒合或聯繫）</span>
-  </label>
-  <div id="fieldWrap" class="hidden">
-    <textarea id="fieldNote" placeholder="需要什麼樣的場域？例：希望媒合一家願意開放訪談的長照機構"></textarea>
-  </div>
-
   <h2>我的成果頁網址<span style="font-weight:400;color:var(--muted)">（收斂時再填）</span></h2>
   <input type="url" id="siteUrl" placeholder="貼上你公開的 Notion 工作區網址">
   <p class="hint">工作區複製到你自己的 Notion 之後，右上角 Share → 發布，把網址貼進來。互審跟課後陪跑都會用到。</p>
@@ -260,7 +251,6 @@ function setState(v){
 }
 document.querySelectorAll(".gate").forEach(b => b.onclick = () => setGate(Number(b.dataset.g)));
 document.querySelectorAll(".st").forEach(b => b.onclick = () => setState(b.dataset.v));
-$("#needField").onchange = e => $("#fieldWrap").classList.toggle("hidden", !e.target.checked);
 
 function refresh(){
   $("#submit").disabled = !(me && gate && state);
@@ -272,8 +262,6 @@ $("#submit").onclick = async () => {
   btn.disabled = true; btn.textContent = "送出中…";
   const payload = {
     name: me.name, school: me.school || "", domain: me.domain || "其他", table: me.table || "",
-    needField: $("#needField").checked,
-    fieldNote: $("#fieldNote").value.trim(),
     siteUrl: $("#siteUrl").value.trim()
   };
   payload["gate" + gate] = state;
