@@ -15,7 +15,7 @@ window.SESSION = "s1";
 /* ---------- 2. 場次資料 ---------- */
 
 window.SESSIONS = {
-  s1: { label: "第一場", date: "＿月＿日" },
+  s1: { label: "第一場", date: "8/24" },
   s2: { label: "第二場", date: "＿月＿日" }
 
   /* 以後還有第三場、第四場，就往下加：
