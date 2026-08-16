@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>壓力測試｜講師看板</title>
+<style>
+  :root{--pri:#14532D;--acc:#9A3412;--ink:#111827;--muted:#6B7280;--rule:#D6DBD8;--tint:#F1F5F2;--red:#B91C1C}
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;font-size:17px;line-height:1.65}
+  header{background:#0B2E20;color:#fff;padding:18px 24px}
+  header h1{margin:0;font-size:21px}
+  header p{margin:4px 0 0;color:#9DBFAE;font-size:15px}
+  main{max-width:760px;margin:0 auto;padding:24px}
+  .warn{background:#FBF1EA;border:1px solid #E8CDB6;color:#7C2D12;padding:14px 16px;margin-bottom:22px;font-size:16px}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0}
+  input[type=number]{width:110px;font:inherit;font-size:17px;padding:10px 12px;border:1.5px solid var(--rule)}
+  button{font:inherit;font-size:17px;font-weight:700;padding:13px 22px;border:none;cursor:pointer;color:#fff;background:var(--acc)}
+  button.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--rule);font-weight:400}
+  button:disabled{background:#C8CCCA;cursor:default}
+  h2{font-size:17px;color:var(--muted);margin:28px 0 8px}
+  .result{border:1px solid var(--rule);background:var(--tint);padding:16px 18px;font-variant-numeric:tabular-nums}
+  .result b{font-size:26px;color:var(--pri)}
+  .bad b{color:var(--red)}
+  pre{background:#0B2E20;color:#D7E7DE;padding:14px 16px;overflow:auto;font-size:14px;max-height:280px;margin:0}
+  ol{padding-left:22px}
+  li{margin:8px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>壓力測試</h1>
+  <p>模擬全場老師同時回報，確認看板扛得住</p>
+</header>
+<main>
+  <div class="warn" id="warn">
+    <b>這會寫入真的資料庫。</b>測試資料的姓名都以「壓測」開頭，測完按下面的清除鈕就會全部刪掉。
+    請在<b>工作坊前</b>做，不要在當天做。
+  </div>
+
+  <h2>怎麼測</h2>
+  <ol>
+    <li>另開一個視窗打開 <b>board.html</b>，擺在旁邊看著</li>
+    <li>回到這一頁，按「開始壓測」</li>
+    <li>看板上的格子應該在兩三秒內全部亮起來。如果超過十秒還沒滿，就是有問題</li>
+    <li>測完按「清除壓測資料」</li>
+  </ol>
+
+  <div class="row">
+    <label>模擬人數</label>
+    <input type="number" id="n" value="30" min="1" max="200">
+    <button id="go">開始壓測</button>
+    <button id="wipe" class="ghost">清除壓測資料</button>
+  </div>
+
+  <h2>結果</h2>
+  <div class="result" id="res">還沒測過。</div>
+
+  <h2>逐筆紀錄</h2>
+  <pre id="log">（尚無）</pre>
+</main>
+
+<script src="config.js"></script>
+<script src="roster.js"></script>
+<script src="db.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const LOG = [];
+function log(s){ LOG.unshift(s); $("#log").textContent = LOG.slice(0,200).join("\n"); }
+
+if (window.DB.DEMO) {
+  $("#warn").innerHTML = "<b>目前是示範模式</b>，沒有連上 Firestore，壓測只會寫進這台電腦的瀏覽器。" +
+                         "設定好 <code>config.js</code> 之後再測一次才有意義。";
+}
+
+const DOMAINS = ["照護","餐飲","製造","農業"];
+const STATES  = ["進行中","通過","卡住"];
+const BLOCK   = ["系所 PO 對映卡住","議題拿掉技術詞就沒東西了","Milestone 刪不下手","R2 R3 分不開","場域約不到人"];
+
+$("#go").onclick = async () => {
+  const n = Math.max(1, Math.min(200, Number($("#n").value) || 30));
+  $("#go").disabled = true; $("#wipe").disabled = true;
+  LOG.length = 0; log("開始：" + n + " 筆同時送出");
+  const t0 = performance.now();
+  let okCount = 0, failCount = 0;
+
+  const jobs = [];
+  for (let i = 1; i <= n; i++) {
+    const nm = "壓測" + String(i).padStart(2, "0");
+    const st = STATES[i % STATES.length];
+    const p = {
+      name: nm,
+      school: "壓測學校",
+      domain: DOMAINS[i % DOMAINS.length],
+      table: String.fromCharCode(65 + (i % 6)),
+      needField: i % 4 === 0,
+      siteUrl: ""
+    };
+    p["gate" + (1 + (i % 3))] = st;
+    p.blocker = st === "卡住" ? BLOCK[i % BLOCK.length] : "";
+    const started = performance.now();
+    jobs.push(window.DB.report(p).then(r => {
+      const ms = Math.round(performance.now() - started);
+      if (r.ok) { okCount++; log("✓ " + nm + "  " + ms + " ms"); }
+      else { failCount++; log("✗ " + nm + "  " + ms + " ms  " + (r.error || "已排入待送")); }
+    }));
+  }
+
+  await Promise.all(jobs);
+  const total = Math.round(performance.now() - t0);
+  const bad = failCount > 0 || total > 10000;
+  $("#res").className = "result" + (bad ? " bad" : "");
+  $("#res").innerHTML =
+    "<b>" + total + " ms</b> 全部送完　｜　成功 " + okCount + " 筆，失敗 " + failCount + " 筆<br>" +
+    (bad
+      ? "<span style='color:#B91C1C'>不合格。失敗的那幾筆會自動排隊補送，但現場不能靠這個。先看 Console 的錯誤訊息，多半是 Firestore 安全規則擋掉了。</span>"
+      : "合格。看板應該已經全部亮起來了，去確認一下畫面。");
+  $("#go").disabled = false; $("#wipe").disabled = false;
+};
+
+$("#wipe").onclick = async () => {
+  $("#wipe").disabled = true; $("#wipe").textContent = "清除中…";
+  try {
+    const n = await window.DB.wipePrefix("壓測");
+    log("已刪除 " + n + " 筆壓測資料");
+    $("#res").innerHTML = "已清除 <b>" + n + "</b> 筆壓測資料。回看板確認格子消失了。";
+  } catch (e) {
+    log("清除失敗：" + e);
+    $("#res").innerHTML = "<span style='color:#B91C1C'>清除失敗：" + e + "</span>";
+  }
+  $("#wipe").disabled = false; $("#wipe").textContent = "清除壓測資料";
+};
+</script>
+</body>
+</html>

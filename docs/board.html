@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>講師看板｜智慧雨林 Capstone 工作坊</title>
+<style>
+  :root{
+    --pri:#14532D; --prid:#0B2E20; --acc:#9A3412; --ink:#111827;
+    --muted:#6B7280; --rule:#D6DBD8; --tint:#F1F5F2;
+    --grey:#9AA3A0; --blue:#1D4ED8; --green:#14532D; --red:#B91C1C;
+    --greyBg:#F3F4F6; --blueBg:#EFF6FF; --greenBg:#ECFDF3; --redBg:#FEF2F2;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:#fff; color:var(--ink); overflow:hidden;
+    font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC","Heiti TC",sans-serif;
+    display:flex; flex-direction:column;
+  }
+
+  header{background:var(--prid); color:#fff; padding:14px 24px; display:flex; align-items:center; gap:24px; flex:none}
+  header h1{font-size:22px; margin:0; font-weight:700; white-space:nowrap}
+  header .now{color:#9DBFAE; font-size:17px; white-space:nowrap}
+  header .clock{margin-left:auto; font-size:26px; font-weight:700; font-variant-numeric:tabular-nums}
+  .gsel{display:flex; gap:8px}
+  .gsel button{
+    background:none; border:1.5px solid #2E5C46; color:#9DBFAE; padding:8px 16px;
+    font:inherit; font-size:17px; font-weight:700; cursor:pointer;
+  }
+  .gsel button[aria-pressed="true"]{background:#fff; border-color:#fff; color:var(--prid)}
+
+  .stats{display:flex; gap:0; border-bottom:1px solid var(--rule); flex:none}
+  .stat{flex:1; padding:12px 20px; border-right:1px solid var(--rule)}
+  .stat:last-child{border-right:none}
+  .stat b{display:block; font-size:34px; line-height:1.1; font-variant-numeric:tabular-nums}
+  .stat span{font-size:15px; color:var(--muted)}
+  .stat.pass b{color:var(--green)} .stat.doing b{color:var(--blue)}
+  .stat.stuck b{color:var(--red)} .stat.none b{color:var(--grey)}
+
+  .wrap{flex:1; display:flex; min-height:0}
+  .gridwrap{flex:1; overflow:auto; padding:16px}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px}
+
+  .card{border:1.5px solid var(--rule); padding:12px 13px; min-height:96px; position:relative; background:var(--greyBg)}
+  .card .nm{font-size:22px; font-weight:700; line-height:1.25}
+  .card .mt{font-size:14px; color:var(--muted); margin-top:3px}
+  .card .bl{font-size:15px; margin-top:8px; line-height:1.4}
+  .card .flags{position:absolute; top:10px; right:11px; font-size:15px; letter-spacing:2px}
+  .card .tag{position:absolute; bottom:9px; right:11px; font-size:13px; font-weight:700; letter-spacing:1px}
+  .card[data-s="進行中"]{background:var(--blueBg); border-color:#BFD5FA}
+  .card[data-s="進行中"] .tag{color:var(--blue)}
+  .card[data-s="通過"]{background:var(--greenBg); border-color:#B6DCC4}
+  .card[data-s="通過"] .tag{color:var(--green)}
+  .card[data-s="卡住"]{background:var(--redBg); border-color:#F0B4B4; border-width:2.5px}
+  .card[data-s="卡住"] .tag{color:var(--red)}
+  .card[data-s="卡住"] .nm{color:var(--red)}
+  .card .dom{position:absolute; left:0; top:0; bottom:0; width:5px}
+
+  aside{width:360px; border-left:1px solid var(--rule); display:flex; flex-direction:column; flex:none}
+  aside h2{margin:0; padding:14px 18px; font-size:17px; background:var(--red); color:#fff; flex:none}
+  aside .list{overflow:auto; padding:12px 16px; flex:1}
+  aside .item{border-bottom:1px solid var(--rule); padding:12px 0}
+  aside .item b{font-size:19px}
+  aside .item small{color:var(--muted); font-size:14px; margin-left:8px}
+  aside .item p{margin:6px 0 0; font-size:16px; line-height:1.45}
+  aside .empty{color:var(--muted); padding:24px 0; font-size:17px; text-align:center}
+
+  footer{flex:none; border-top:1px solid var(--rule); padding:8px 24px; font-size:14px; color:var(--muted);
+         display:flex; gap:20px; align-items:center}
+  footer .dot{width:9px; height:9px; border-radius:50%; background:var(--green); display:inline-block; margin-right:6px}
+  footer .dot.bad{background:var(--red)}
+  footer button{background:none; border:1px solid var(--rule); font:inherit; font-size:13px; padding:4px 10px; cursor:pointer; color:var(--muted)}
+  .keys{margin-left:auto}
+  .keys kbd{border:1px solid var(--rule); padding:1px 6px; font-size:12px; font-family:inherit}
+
+  body.blocked-only .gridwrap{display:none}
+  body.blocked-only aside{width:100%; border-left:none}
+  body.blocked-only aside .item b{font-size:23px}
+  body.blocked-only aside .item p{font-size:18px}
+
+  @media (max-width:900px){
+    .wrap{flex-direction:column}
+    aside{width:100%; border-left:none; border-top:1px solid var(--rule); max-height:45%}
+    header{flex-wrap:wrap; gap:12px}
+    header .clock{font-size:20px}
+    .stat b{font-size:26px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="ttl">講師看板</h1>
+  <div class="now" id="ses" style="color:#fff;background:#2E5C46;padding:4px 12px;border-radius:4px"></div>
+  <div class="now" id="now"></div>
+  <div class="gsel" id="gsel">
+    <button data-g="1">Gate 1</button>
+    <button data-g="2">Gate 2</button>
+    <button data-g="3">Gate 3</button>
+  </div>
+  <div class="clock" id="clock">--:--</div>
+</header>
+
+<div class="stats">
+  <div class="stat pass"><b id="nPass">0</b><span>通過</span></div>
+  <div class="stat doing"><b id="nDoing">0</b><span>進行中</span></div>
+  <div class="stat stuck"><b id="nStuck">0</b><span>卡住</span></div>
+  <div class="stat none"><b id="nNone">0</b><span>未回報</span></div>
+</div>
+
+<div class="wrap">
+  <div class="gridwrap"><div class="grid" id="grid"></div></div>
+  <aside>
+    <h2 id="asideTitle">卡住的人｜巡場照這張</h2>
+    <div class="list" id="stuckList"></div>
+  </aside>
+</div>
+
+<footer>
+  <span><span class="dot" id="dot"></span><span id="conn">連線中…</span></span>
+  <span id="demoBox" style="display:none">
+    <button id="seed">產生示範資料</button>
+    <button id="clear">清空</button>
+  </span>
+  <span class="keys">
+    <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 切換 Gate　<kbd>B</kbd> 只看卡住　<kbd>F</kbd> 全螢幕
+  </span>
+</footer>
+
+<script src="config.js"></script>
+<script src="roster.js"></script>
+<script src="db.js"></script>
+<script>
+const { subscribe, DEMO, demoSeed, demoClear, docKey } = window.DB;
+
+const $ = s => document.querySelector(s);
+const DOMCOLOR = { "照護":"#14532D", "餐飲":"#9A3412", "製造":"#1D4ED8", "農業":"#A16207", "其他":"#6B7280" };
+const params = new URLSearchParams(location.search);
+
+let gate = Number(params.get("gate")) || 0;
+let data = [];
+
+$("#ttl").textContent = (window.WORKSHOP && window.WORKSHOP.title) || "講師看板";
+$("#ses").textContent = [window.DB.sessionLabel, window.DB.sessionDate].filter(Boolean).join("　");
+if (params.get("view") === "blocked") document.body.classList.add("blocked-only");
+if (DEMO) { $("#demoBox").style.display = ""; }
+
+/* ---------- 時鐘與現在時段 ---------- */
+function hm(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+}
+function currentSlot(){
+  const t = hm();
+  let cur = null;
+  (window.SCHEDULE || []).forEach(s => { if (t >= s.start && t < s.end) cur = s; });
+  return cur;
+}
+function tickClock(){
+  $("#clock").textContent = hm();
+  const s = currentSlot();
+  $("#now").textContent = s ? (s.start + "–" + s.end + "　" + s.label) : "";
+  if (!gate) { const g = s && s.gate ? s.gate : 1; if (g !== gate) setGate(g); }
+}
+setInterval(tickClock, 10000); tickClock();
+
+/* ---------- Gate 切換 ---------- */
+function setGate(g){
+  gate = g;
+  document.querySelectorAll("#gsel button").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.g) === g)));
+  $("#asideTitle").textContent = "Gate " + g + " 卡住的人｜巡場照這張";
+  render();
+}
+document.querySelectorAll("#gsel button").forEach(b => b.onclick = () => setGate(Number(b.dataset.g)));
+addEventListener("keydown", e => {
+  if (e.key === "1" || e.key === "2" || e.key === "3") setGate(Number(e.key));
+  if (e.key.toLowerCase() === "b") document.body.classList.toggle("blocked-only");
+  if (e.key.toLowerCase() === "f") {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  }
+});
+
+/* ---------- 合併名單與回報 ---------- */
+function merged(){
+  const byKey = {};
+  (window.ROSTER || []).forEach(t => { byKey[docKey(t.name)] = { ...t }; });
+  data.forEach(d => {
+    const k = docKey(d.name);
+    byKey[k] = { ...(byKey[k] || {}), ...d };
+  });
+  return Object.values(byKey).sort((a,b) =>
+    (a.table || "zz").localeCompare(b.table || "zz") || String(a.name).localeCompare(String(b.name), "zh-Hant"));
+}
+
+/* ---------- 畫面 ---------- */
+function render(){
+  const rows = merged();
+  const grid = $("#grid"); grid.innerHTML = "";
+  let pass=0, doing=0, stuck=0, none=0;
+  const stuckRows = [];
+
+  rows.forEach(r => {
+    const s = r["gate" + gate] || "";
+    if (s === "通過") pass++;
+    else if (s === "進行中") doing++;
+    else if (s === "卡住") { stuck++; stuckRows.push(r); }
+    else none++;
+
+    const c = document.createElement("div");
+    c.className = "card";
+    c.setAttribute("data-s", s || "未回報");
+    const flags = (r.needField ? "▲" : "") + (r.siteUrl ? "🔗" : "");
+    c.innerHTML =
+      '<span class="dom" style="background:' + (DOMCOLOR[r.domain] || DOMCOLOR["其他"]) + '"></span>' +
+      '<div class="nm">' + esc(r.name) + '</div>' +
+      '<div class="mt">' + esc([r.table ? r.table + "桌" : "", r.domain || "", r.school || ""].filter(Boolean).join("　")) + '</div>' +
+      (s === "卡住" && r.blocker ? '<div class="bl">' + esc(r.blocker) + '</div>' : "") +
+      '<div class="flags">' + flags + '</div>' +
+      '<div class="tag">' + esc(s || "未回報") + (r.updatedAtHM ? "　" + esc(r.updatedAtHM) : "") + '</div>';
+    grid.appendChild(c);
+  });
+
+  $("#nPass").textContent = pass;
+  $("#nDoing").textContent = doing;
+  $("#nStuck").textContent = stuck;
+  $("#nNone").textContent = none;
+
+  const list = $("#stuckList"); list.innerHTML = "";
+  if (!stuckRows.length) {
+    list.innerHTML = '<div class="empty">目前沒有人回報卡住。<br>照樣要巡場——安靜的人不一定是順的。</div>';
+  } else {
+    stuckRows.forEach(r => {
+      const d = document.createElement("div");
+      d.className = "item";
+      d.innerHTML = "<b>" + esc(r.name) + "</b><small>" + esc([r.table ? r.table + "桌" : "", r.domain || ""].filter(Boolean).join("　")) + "</small>" +
+                    "<p>" + esc(r.blocker || "（沒寫卡在哪，走過去問）") + "</p>";
+      list.appendChild(d);
+    });
+  }
+}
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+/* ---------- 連線 ---------- */
+subscribe((rows, err) => {
+  if (err) {
+    $("#dot").classList.add("bad");
+    $("#conn").textContent = "連線中斷，畫面停在最後一次更新";
+    return;
+  }
+  data = rows || [];
+  $("#dot").classList.remove("bad");
+  $("#conn").textContent = DEMO ? "示範模式（沒有連線）" : ("已連線　" + data.length + " 人回報過");
+  render();
+});
+
+$("#seed") && ($("#seed").onclick = () => demoSeed());
+$("#clear") && ($("#clear").onclick = () => demoClear());
+
+setGate(gate || 1);
+</script>
+</body>
+</html>

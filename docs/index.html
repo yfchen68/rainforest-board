@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>回報｜智慧雨林 Capstone 工作坊</title>
+<style>
+  :root{
+    --pri:#14532D; --prid:#0B2E20; --acc:#9A3412; --ink:#111827;
+    --muted:#6B7280; --rule:#D6DBD8; --tint:#F1F5F2;
+    --grey:#9AA3A0; --blue:#1D4ED8; --green:#14532D; --red:#B91C1C;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{
+    margin:0; background:#fff; color:var(--ink);
+    font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC","Heiti TC",sans-serif;
+    font-size:18px; line-height:1.6;
+    padding:0 0 90px;
+  }
+  header{
+    background:var(--prid); color:#fff; padding:18px 20px 16px;
+  }
+  header .kicker{font-size:15px; color:#9DBFAE; letter-spacing:1.5px}
+  header h1{font-size:21px; margin:4px 0 0; font-weight:700}
+  main{max-width:640px; margin:0 auto; padding:20px}
+
+  .who{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border:1px solid var(--rule); background:var(--tint);
+    padding:14px 16px; margin-bottom:22px;
+  }
+  .who b{font-size:20px}
+  .who small{display:block; color:var(--muted); font-size:15px}
+  .linkbtn{
+    background:none; border:none; color:var(--pri); font:inherit; font-size:16px;
+    text-decoration:underline; cursor:pointer; padding:6px; white-space:nowrap;
+  }
+
+  h2{font-size:17px; margin:26px 0 10px; color:var(--muted); font-weight:700; letter-spacing:.5px}
+
+  .gates{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+  .gate{
+    border:1.5px solid var(--rule); background:#fff; padding:14px 6px;
+    font:inherit; font-size:17px; font-weight:700; color:var(--ink);
+    cursor:pointer; text-align:center; line-height:1.35;
+  }
+  .gate small{display:block; font-weight:400; font-size:14px; color:var(--muted)}
+  .gate[aria-pressed="true"]{background:var(--pri); border-color:var(--pri); color:#fff}
+  .gate[aria-pressed="true"] small{color:#9DBFAE}
+
+  .states{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  .st{
+    border:1.5px solid var(--rule); background:#fff; padding:18px 8px;
+    font:inherit; font-size:19px; font-weight:700; cursor:pointer; color:var(--ink);
+  }
+  .st[aria-pressed="true"]{color:#fff}
+  .st[data-v="未開始"][aria-pressed="true"]{background:var(--grey); border-color:var(--grey)}
+  .st[data-v="進行中"][aria-pressed="true"]{background:var(--blue); border-color:var(--blue)}
+  .st[data-v="通過"][aria-pressed="true"]{background:var(--green); border-color:var(--green)}
+  .st[data-v="卡住"][aria-pressed="true"]{background:var(--red); border-color:var(--red)}
+
+  textarea,input[type=url],input[type=text],select{
+    width:100%; font:inherit; font-size:17px; padding:12px 14px;
+    border:1.5px solid var(--rule); border-radius:0; background:#fff; color:var(--ink);
+  }
+  textarea{min-height:88px; resize:vertical}
+  label.check{display:flex; gap:12px; align-items:flex-start; padding:14px 0; cursor:pointer}
+  label.check input{width:24px; height:24px; margin:2px 0 0; flex:none; accent-color:var(--acc)}
+
+  .hint{color:var(--muted); font-size:15px; margin:6px 0 0}
+  .hidden{display:none}
+
+  .send{
+    position:fixed; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.96); border-top:1px solid var(--rule);
+  }
+  .send button{
+    width:100%; max-width:620px; margin:0 auto; display:block;
+    background:var(--acc); color:#fff; border:none; padding:18px;
+    font:inherit; font-size:20px; font-weight:700; cursor:pointer;
+  }
+  .send button:disabled{background:#C8CCCA; cursor:default}
+
+  .status{margin-top:22px; padding-top:16px; border-top:1px solid var(--rule);
+          color:var(--muted); font-size:15px}
+  .status b{color:var(--pri)}
+  .warn{background:#FBF1EA; border:1px solid #E8CDB6; color:#7C2D12; padding:12px 14px; font-size:15px; margin-bottom:18px}
+
+  dialog{border:1.5px solid var(--pri); padding:0; max-width:420px; width:92%}
+  dialog::backdrop{background:rgba(11,46,32,.5)}
+  .dlg{padding:22px}
+  .dlg h3{margin:0 0 14px; font-size:19px}
+  .dlg button.primary{width:100%; background:var(--pri); color:#fff; border:none; padding:15px; font:inherit; font-size:18px; font-weight:700; cursor:pointer; margin-top:14px}
+
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:100px;
+    background:var(--prid); color:#fff; padding:14px 22px; font-size:17px;
+    opacity:0; transition:opacity .25s; pointer-events:none; z-index:50; max-width:90%;
+  }
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">智慧雨林 Capstone 課程設計工作坊</div>
+  <h1>進度回報<span id="ses" style="font-size:15px;font-weight:400;color:#9DBFAE;margin-left:10px"></span></h1>
+</header>
+
+<main>
+  <div id="demoWarn" class="warn hidden">
+    <b>示範模式。</b>目前沒有連上資料庫，你填的東西只留在這台裝置，講師看板看不到。
+    正式使用前請先設定 <code>config.js</code>。
+  </div>
+
+  <div class="who">
+    <div>
+      <b id="whoName">—</b>
+      <small id="whoMeta"></small>
+    </div>
+    <button class="linkbtn" id="changeWho">不是我？</button>
+  </div>
+
+  <h2>這次回報哪一關</h2>
+  <div class="gates" id="gates">
+    <button class="gate" data-g="1">Gate 1<small>議題成立</small></button>
+    <button class="gate" data-g="2">Gate 2<small>能力目標</small></button>
+    <button class="gate" data-g="3">Gate 3<small>可以開課</small></button>
+  </div>
+
+  <h2>現在的狀態</h2>
+  <div class="states" id="states">
+    <button class="st" data-v="未開始">未開始</button>
+    <button class="st" data-v="進行中">進行中</button>
+    <button class="st" data-v="通過">通過</button>
+    <button class="st" data-v="卡住">卡住</button>
+  </div>
+
+  <div id="blockWrap" class="hidden">
+    <h2>卡在哪裡</h2>
+    <textarea id="blocker" placeholder="一句話講清楚。例：系所 PO 對映卡住，不確定算不算已涵蓋"></textarea>
+    <p class="hint">寫得越具體，講師走過來就能直接接手，不用重問一次。</p>
+  </div>
+
+  <h2>需要協助嗎</h2>
+  <label class="check">
+    <input type="checkbox" id="needField">
+    <span>我需要場域協助（希望計畫團隊幫忙媒合或聯繫）</span>
+  </label>
+  <div id="fieldWrap" class="hidden">
+    <textarea id="fieldNote" placeholder="需要什麼樣的場域？例：希望媒合一家願意開放訪談的長照機構"></textarea>
+  </div>
+
+  <h2>我的成果頁網址<span style="font-weight:400;color:var(--muted)">（收斂時再填）</span></h2>
+  <input type="url" id="siteUrl" placeholder="貼上你公開的 Notion 工作區網址">
+  <p class="hint">工作區複製到你自己的 Notion 之後，右上角 Share → 發布，把網址貼進來。互審跟課後陪跑都會用到。</p>
+
+  <div class="status">
+    <div id="lastLine">尚未回報過。</div>
+    <div id="queueLine"></div>
+  </div>
+</main>
+
+<div class="send">
+  <button id="submit" disabled>送出回報</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<dialog id="pick">
+  <div class="dlg">
+    <h3>你是哪一位？</h3>
+    <select id="pickSel"></select>
+    <input type="text" id="pickFree" class="hidden" placeholder="輸入你的姓名" style="margin-top:10px">
+    <input type="text" id="pickSchool" class="hidden" placeholder="學校（選填）" style="margin-top:10px">
+    <button class="primary" id="pickOk">就是我</button>
+  </div>
+</dialog>
+
+<script src="config.js"></script>
+<script src="roster.js"></script>
+<script src="db.js"></script>
+<script>
+const { report, startRetryLoop, queueLength, DEMO, nowHM } = window.DB;
+
+const ME_KEY = "rainforest_me_v1";
+const LAST_KEY = "rainforest_last_v1";
+const $ = s => document.querySelector(s);
+
+let me = null;
+let gate = null;
+let state = null;
+
+/* ---------- 場次與示範模式提示 ---------- */
+$("#ses").textContent = [window.DB.sessionLabel, window.DB.sessionDate].filter(Boolean).join("　");
+if (DEMO) $("#demoWarn").classList.remove("hidden");
+
+/* ---------- 認人 ---------- */
+function loadMe(){
+  try { me = JSON.parse(localStorage.getItem(ME_KEY) || "null"); } catch(e){ me = null; }
+  if (me) paintMe(); else openPick();
+}
+function paintMe(){
+  $("#whoName").textContent = me.name;
+  $("#whoMeta").textContent = [me.school, me.domain, me.table ? me.table + " 桌" : ""].filter(Boolean).join("　");
+}
+function openPick(){
+  const sel = $("#pickSel");
+  sel.innerHTML = "";
+  (window.ROSTER || []).forEach((t,i) => {
+    const o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = t.name + "（" + t.school + "）";
+    sel.appendChild(o);
+  });
+  const other = document.createElement("option");
+  other.value = "other"; other.textContent = "── 不在名單上 ──";
+  sel.appendChild(other);
+  sel.onchange = () => {
+    const free = sel.value === "other";
+    $("#pickFree").classList.toggle("hidden", !free);
+    $("#pickSchool").classList.toggle("hidden", !free);
+  };
+  $("#pick").showModal();
+}
+$("#pickOk").onclick = () => {
+  const sel = $("#pickSel");
+  if (sel.value === "other") {
+    const n = $("#pickFree").value.trim();
+    if (!n) { $("#pickFree").focus(); return; }
+    me = { name:n, school:$("#pickSchool").value.trim(), domain:"其他", table:"" };
+  } else {
+    me = { ...(window.ROSTER || [])[Number(sel.value)] };
+  }
+  localStorage.setItem(ME_KEY, JSON.stringify(me));
+  paintMe();
+  $("#pick").close();
+};
+$("#changeWho").onclick = openPick;
+
+/* ---------- 依時間自動選 Gate ---------- */
+function autoGate(){
+  const now = new Date();
+  const hm = String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0");
+  let g = 1;
+  (window.SCHEDULE || []).forEach(s => { if (hm >= s.start && hm < s.end && s.gate) g = s.gate; });
+  return g;
+}
+function setGate(g){
+  gate = g;
+  document.querySelectorAll(".gate").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.g) === g)));
+  refresh();
+}
+function setState(v){
+  state = v;
+  document.querySelectorAll(".st").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+  $("#blockWrap").classList.toggle("hidden", v !== "卡住");
+  if (v === "卡住") setTimeout(() => $("#blocker").focus(), 60);
+  refresh();
+}
+document.querySelectorAll(".gate").forEach(b => b.onclick = () => setGate(Number(b.dataset.g)));
+document.querySelectorAll(".st").forEach(b => b.onclick = () => setState(b.dataset.v));
+$("#needField").onchange = e => $("#fieldWrap").classList.toggle("hidden", !e.target.checked);
+
+function refresh(){
+  $("#submit").disabled = !(me && gate && state);
+}
+
+/* ---------- 送出 ---------- */
+$("#submit").onclick = async () => {
+  const btn = $("#submit");
+  btn.disabled = true; btn.textContent = "送出中…";
+  const payload = {
+    name: me.name, school: me.school || "", domain: me.domain || "其他", table: me.table || "",
+    needField: $("#needField").checked,
+    fieldNote: $("#fieldNote").value.trim(),
+    siteUrl: $("#siteUrl").value.trim()
+  };
+  payload["gate" + gate] = state;
+  payload.blocker = state === "卡住" ? $("#blocker").value.trim() : "";
+  payload.lastGate = gate;
+
+  const r = await report(payload);
+  const stamp = "Gate " + gate + "　" + state + "　" + nowHM();
+  localStorage.setItem(LAST_KEY, stamp);
+  paintLast();
+  if (r.ok) toast("已回報，講師看到了");
+  else if (r.denied) toast("系統設定有問題，回報沒送出去。請直接舉手告訴講師。");
+  else toast("網路不通，已排入待送，恢復後自動補上");
+  btn.textContent = "送出回報";
+  refresh();
+};
+
+function paintLast(){
+  const s = localStorage.getItem(LAST_KEY);
+  $("#lastLine").innerHTML = s ? ("上次回報：<b>" + s + "</b>") : "尚未回報過。";
+}
+function paintQueue(n){
+  const q = typeof n === "number" ? n : queueLength();
+  $("#queueLine").textContent = q ? ("有 " + q + " 筆還沒送出去，連上網路會自動補送。") : "";
+}
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  setTimeout(() => t.classList.remove("on"), 2600);
+}
+
+/* ---------- 啟動 ---------- */
+loadMe();
+setGate(autoGate());
+paintLast();
+paintQueue();
+startRetryLoop(paintQueue);
+</script>
+</body>
+</html>
