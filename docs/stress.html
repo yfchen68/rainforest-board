@@ -53,6 +53,13 @@
     <button id="wipe" class="ghost">清除壓測資料</button>
   </div>
 
+  <h2>開場前清空</h2>
+  <p style="margin:0 0 12px">壓測、手動測試、上一輪的殘留，一次清乾淨。<b>只清目前這一個場次</b>，其他場次不受影響。</p>
+  <div class="row">
+    <button id="wipeAll" style="background:var(--red)">清空本場次全部資料</button>
+    <span id="wipeAllWho" style="color:var(--muted);font-size:15px"></span>
+  </div>
+
   <h2>結果</h2>
   <div class="result" id="res">還沒測過。</div>
 
@@ -116,6 +123,26 @@ $("#go").onclick = async () => {
       ? "<span style='color:#B91C1C'>不合格。失敗的那幾筆會自動排隊補送，但現場不能靠這個。先看 Console 的錯誤訊息，多半是 Firestore 安全規則擋掉了。</span>"
       : "合格。看板應該已經全部亮起來了，去確認一下畫面。");
   $("#go").disabled = false; $("#wipe").disabled = false;
+};
+
+$("#wipeAllWho").textContent = "目前場次：" + window.DB.sessionLabel + "（" + window.DB.path + "）";
+
+$("#wipeAll").onclick = async () => {
+  const ans = prompt(
+    "這會刪掉「" + window.DB.sessionLabel + "」的全部回報資料，無法復原。\n" +
+    "確定的話，請輸入場次代號：" + window.DB.session);
+  if (ans !== window.DB.session) { log("已取消清空"); return; }
+
+  $("#wipeAll").disabled = true; $("#wipeAll").textContent = "清空中…";
+  try {
+    const n = await window.DB.wipePrefix("");
+    log("已清空 " + n + " 筆（" + window.DB.path + "）");
+    $("#res").innerHTML = "已清空 <b>" + n + "</b> 筆。回看板確認格子全部變回「未回報」。";
+  } catch (e) {
+    log("清空失敗：" + e);
+    $("#res").innerHTML = "<span style='color:#B91C1C'>清空失敗：" + e + "</span>";
+  }
+  $("#wipeAll").disabled = false; $("#wipeAll").textContent = "清空本場次全部資料";
 };
 
 $("#wipe").onclick = async () => {
